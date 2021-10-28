@@ -40,6 +40,9 @@ def test_network():
 
 if __name__ == '__main__':
 
+    active_outage = None
+    outage_point = None
+
     bucket = "netmon"
     org = "lofty"
     token = "drG6_43doCj2MgQG2PbZ62f0QO7nBgmMO9C4_ILfbJeshOmxhNBR5NSkFxf4US6hrt8GSxn8hhMJjB1wvOVgpw=="
@@ -62,13 +65,21 @@ if __name__ == '__main__':
 
         latency = (stop - start) * 1000
 
-
         if test_network():
+            if active_outage:
+                now = time.time()
+                outage_point = influxdb_client.Point("connection_outage").field("duration", now - active_outage)
+                write_api.write(bucket=bucket, org=org, record=outage_point)
+                active_outage = None
+                
             print(f"[{color_latency(latency)} ] [{time.ctime()}]\tNetwork up...")
             p = influxdb_client.Point("connection_stat").field("latency", latency)
         else:
+            if active_outage is None:
+                active_outage = time.time()
+            
             print(f"[{CRED}ERR {CEND}] [{time.ctime()}]Network down, timeout out after {latency:.0f}ms...")
-            p = influxdb_client.Point("connection_stat").field("latency", -1)
+            p = influxdb_client.Point("connection_stat").field("latency", -1.0)
 
         write_api.write(bucket=bucket, org=org, record=p)
         
