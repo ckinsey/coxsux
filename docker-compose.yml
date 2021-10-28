@@ -1,0 +1,25 @@
+version: '3.3'
+
+services:
+  app:
+    build:
+      context: .
+    depends_on:
+      - influx
+    volumes:
+      - .:/app
+    command: python /app/app.py
+    environment:
+      PYTHONUNBUFFERED: 1
+    restart: on-failure  
+  
+  influx:
+    image: influxdb:2.0.9
+    ports:
+      - 8086:8086
+    volumes:
+      - influx_data:/var/lib/influxdb2
+    
+volumes:
+  influx_data: {}
+ 
